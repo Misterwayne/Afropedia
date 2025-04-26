@@ -56,6 +56,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           ) : isAuthenticated() ? (
             <>
               <Text mr={4} display={{ base: 'none', lg: 'inline' }}>Welcome, {user?.username}!</Text>
+              <Link href="/library" passHref><Button size="sm" variant="ghost" colorScheme="whiteAlpha" ml={2}>Library</Button></Link>
               <Link href="/edit/new" passHref>
                  <Button leftIcon={<AddIcon />} colorScheme="whiteAlpha" variant="outline" mr={2} size="sm">New Article</Button>
               </Link>

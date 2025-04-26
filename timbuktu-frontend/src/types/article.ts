@@ -1,10 +1,17 @@
 // types/article.ts
 import { User } from './user';
 
+export interface Comment {
+    id: number;
+    content: string;
+    user_id: number | null;
+    created_at: string; // Consider using Date type
+}
+
 export interface Revision {
     id: number;
     content: string;
-    comment: string | null;
+    comments: [Comment] | null;
     timestamp: string; // Consider using Date type
     articleId: number;
     userId: number | null;

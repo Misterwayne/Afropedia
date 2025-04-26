@@ -51,7 +51,7 @@ const HistoryPage = () => {
       </Heading>
        {error && <ErrorMessage title="Load Error" message={error} />}
       {!error && title && typeof title === 'string' && (
-        <RevisionList revisions={revisions} articleTitle={title} />
+        <RevisionList revisions={revisions} setRevisions={setRevisions} articleTitle={title} />
       )}
     </Box>
   );

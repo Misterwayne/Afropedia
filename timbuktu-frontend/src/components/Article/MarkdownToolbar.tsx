@@ -2,15 +2,26 @@
 import React, { RefObject } from 'react';
 import { Button, ButtonGroup, Wrap, WrapItem, Tooltip, IconButton, Select, Box } from '@chakra-ui/react';
 import {
-  FaBold, FaItalic, FaLink, FaCode, FaListUl, FaListOl, FaQuoteLeft, FaImage, FaHeading, FaMinus // Icons
+  FaBold, FaItalic, FaLink, FaCode, FaListUl, FaListOl, FaQuoteLeft, FaImage, FaHeading, FaMinus,
+  FaMusic, FaVideo // Import media icons
 } from 'react-icons/fa';
 
 interface MarkdownToolbarProps {
   textareaRef: RefObject<HTMLTextAreaElement>; // Ref to the textarea element
   onContentChange: (value: string) => void; // Function to update the parent's state
+  // Callbacks to open the upload modals
+  onOpenAudioModal: () => void;
+  onOpenImageModal: () => void;
+  onOpenVideoModal: () => void;
 }
 
-const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({ textareaRef, onContentChange }) => {
+const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
+  textareaRef,
+  onContentChange,
+  onOpenAudioModal,
+  onOpenVideoModal,
+  onOpenImageModal
+}) => {
 
   // Helper function to wrap selected text or insert placeholder
   const applyMarkdown = (syntaxStart: string, syntaxEnd: string = syntaxStart, placeholder: string = 'text') => {
@@ -23,22 +34,17 @@ const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({ textareaRef, onConten
     let newValue;
 
     if (selectedText) {
-      // Wrap selected text
       newValue = `${textarea.value.substring(0, start)}${syntaxStart}${selectedText}${syntaxEnd}${textarea.value.substring(end)}`;
     } else {
-      // Insert placeholder
       newValue = `${textarea.value.substring(0, start)}${syntaxStart}${placeholder}${syntaxEnd}${textarea.value.substring(end)}`;
     }
+    onContentChange(newValue);
 
-    onContentChange(newValue); // Update parent state
-
-    // Set focus and selection after state update (needs slight delay)
     setTimeout(() => {
       textarea.focus();
       if (selectedText) {
         textarea.setSelectionRange(start + syntaxStart.length, start + syntaxStart.length + selectedText.length);
       } else {
-         // Place cursor within the placeholder or after syntax
          textarea.setSelectionRange(start + syntaxStart.length, start + syntaxStart.length + placeholder.length);
       }
     }, 0);
@@ -52,21 +58,23 @@ const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({ textareaRef, onConten
       const end = textarea.selectionEnd;
       const selectedText = textarea.value.substring(start, end);
       const lines = selectedText.split('\n');
-      const newLines = lines.map(line => `${marker} ${line}`).join('\n');
-      const prefix = textarea.value.substring(0, start).endsWith('\n') || start === 0 ? '' : '\n'; // Add newline if needed
-      const suffix = textarea.value.substring(end).startsWith('\n') || end === textarea.value.length ? '' : '\n'; // Add newline if needed
+      const markerPrefix = lines.length > 1 ? lines.map(line => `${marker} ${line}`).join('\n') : `${marker} ${selectedText || 'List item'}`;
+      const prefix = textarea.value.substring(0, start).endsWith('\n') || start === 0 ? '' : '\n';
+      const suffix = textarea.value.substring(end).startsWith('\n') || end === textarea.value.length ? '' : '\n';
 
-      const newValue = `${textarea.value.substring(0, start)}${prefix}${newLines}${suffix}${textarea.value.substring(end)}`;
+      const newValue = `${textarea.value.substring(0, start)}${prefix}${markerPrefix}${suffix}${textarea.value.substring(end)}`;
       onContentChange(newValue);
 
       setTimeout(() => {
          textarea.focus();
-         textarea.setSelectionRange(start + prefix.length, start + prefix.length + newLines.length);
+         // Select the inserted list item(s)
+         textarea.setSelectionRange(start + prefix.length, start + prefix.length + markerPrefix.length);
       }, 0);
    }
 
    // Helper for headings
    const applyHeading = (level: number) => {
+        if (!level) return; // Handle placeholder selection
         const marker = '#'.repeat(level);
         applyMarkdown(`${marker} `, '', `Heading ${level}`);
    }
@@ -82,6 +90,7 @@ const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({ textareaRef, onConten
               onChange={(e) => applyHeading(parseInt(e.target.value, 10))}
               w="100px"
               aria-label="Select Heading Level"
+              bg="white" // Ensure contrast
            >
               <option value="1">H1</option>
               <option value="2">H2</option>
@@ -94,7 +103,7 @@ const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({ textareaRef, onConten
 
          {/* Basic Formatting */}
         <WrapItem>
-          <ButtonGroup size="sm" isAttached variant="outline">
+          <ButtonGroup size="sm" isAttached variant="outline" bg="white">
             <Tooltip label="Bold (Ctrl+B)" aria-label="Bold">
                <IconButton icon={<FaBold />} aria-label="Bold" onClick={() => applyMarkdown('**')} />
             </Tooltip>
@@ -104,21 +113,20 @@ const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({ textareaRef, onConten
           </ButtonGroup>
         </WrapItem>
 
-        {/* Links & Images */}
+        {/* Links */}
          <WrapItem>
-          <ButtonGroup size="sm" isAttached variant="outline">
+          <ButtonGroup size="sm" isAttached variant="outline" bg="white">
              <Tooltip label="Insert Link (Ctrl+K)" aria-label="Insert Link">
                <IconButton icon={<FaLink />} aria-label="Insert Link" onClick={() => applyMarkdown('[', '](url)', 'link text')} />
             </Tooltip>
-             {/* <Tooltip label="Insert Image" aria-label="Insert Image">
-                <IconButton icon={<FaImage />} aria-label="Insert Image" onClick={() => applyMarkdown('![', '](imageUrl)', 'alt text')} />
-             </Tooltip> */}
+             {/* Image button might need modal too for alt text etc. */}
+             {/* <Tooltip label="Insert Image" aria-label="Insert Image"><IconButton icon={<FaImage />} aria-label="Insert Image" onClick={() => applyMarkdown('![', '](imageUrl)', 'alt text')} /></Tooltip> */}
           </ButtonGroup>
         </WrapItem>
 
          {/* Lists */}
          <WrapItem>
-          <ButtonGroup size="sm" isAttached variant="outline">
+          <ButtonGroup size="sm" isAttached variant="outline" bg="white">
             <Tooltip label="Bulleted List" aria-label="Bulleted List">
               <IconButton icon={<FaListUl />} aria-label="Bulleted List" onClick={() => applyList('*')} />
             </Tooltip>
@@ -130,20 +138,34 @@ const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({ textareaRef, onConten
 
          {/* Block Elements */}
         <WrapItem>
-          <ButtonGroup size="sm" isAttached variant="outline">
+          <ButtonGroup size="sm" isAttached variant="outline" bg="white">
              <Tooltip label="Blockquote" aria-label="Blockquote">
               <IconButton icon={<FaQuoteLeft />} aria-label="Blockquote" onClick={() => applyMarkdown('> ', '', 'Quote')} />
             </Tooltip>
             <Tooltip label="Code Block" aria-label="Code Block">
-              <IconButton icon={<FaCode />} aria-label="Code Block" onClick={() => applyMarkdown('```\n', '\n```', 'code')} />
+              <IconButton icon={<FaCode />} aria-label="Code Block" onClick={() => applyMarkdown('\n```\n', '\n```', 'code')} />
             </Tooltip>
              <Tooltip label="Horizontal Rule" aria-label="Horizontal Rule">
-              <IconButton icon={<FaMinus />} aria-label="Horizontal Rule" onClick={() => applyMarkdown('\n---\n', '', '')} />
+              <IconButton icon={<FaMinus />} aria-label="Horizontal Rule" onClick={() => onContentChange(textareaRef.current ? `${textareaRef.current.value}\n\n---\n` : '\n---\n')} />
             </Tooltip>
           </ButtonGroup>
         </WrapItem>
 
-         {/* Add more buttons as needed: Strikethrough, Inline Code, Tables etc. */}
+        {/* Media Upload Buttons */}
+        <WrapItem>
+          <ButtonGroup size="sm" isAttached variant="outline" bg="white">
+            <Tooltip label="Upload/Insert Audio" aria-label="Upload Audio">
+               <IconButton icon={<FaMusic />} aria-label="Upload Audio" onClick={onOpenAudioModal} />
+            </Tooltip>
+            <Tooltip label="Upload/Insert Video" aria-label="Upload Video">
+               <IconButton icon={<FaVideo />} aria-label="Upload Video" onClick={onOpenVideoModal} />
+            </Tooltip>
+            <Tooltip label="Upload/Insert Image" aria-label="Upload Image">
+              <IconButton icon={<FaImage />} aria-label="Upload Image" onClick={onOpenImageModal} />
+            </Tooltip>
+          </ButtonGroup>
+        </WrapItem>
+
       </Wrap>
     </Box>
   );
