@@ -57,6 +57,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <>
               <Text mr={4} display={{ base: 'none', lg: 'inline' }}>Welcome, {user?.username}!</Text>
               <Link href="/library" passHref><Button size="sm" variant="ghost" colorScheme="whiteAlpha" ml={2}>Library</Button></Link>
+        {(user?.role === 'admin' || user?.role === 'moderator') && (
+          <Link href="/moderation" passHref>
+            <Button size="sm" variant="ghost" colorScheme="whiteAlpha" ml={2}>Moderation</Button>
+          </Link>
+        )}
+        {(user?.role === 'admin' || user?.role === 'moderator' || user?.role === 'editor') && (
+          <Link href="/peer-review" passHref>
+            <Button size="sm" variant="ghost" colorScheme="whiteAlpha" ml={2}>Peer Review</Button>
+          </Link>
+        )}
               <Link href="/edit/new" passHref>
                  <Button leftIcon={<AddIcon />} colorScheme="whiteAlpha" variant="outline" mr={2} size="sm">New Article</Button>
               </Link>

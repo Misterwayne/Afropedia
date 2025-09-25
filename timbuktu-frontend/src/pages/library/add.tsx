@@ -1,7 +1,7 @@
 // pages/library/add.tsx
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import { Box, Heading, useToast, Flex, Text, Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@chakra-ui/react';
+import { Box, Heading, useToast, Flex, Text, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Container } from '@chakra-ui/react';
 import { ChevronRightIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import { useRequireAuth } from '@/hooks/useRequireAuth'; // Import if adding books requires login
@@ -72,27 +72,29 @@ const AddBookPage = () => {
   }
 
   return (
-    <Box>
-       {/* Breadcrumbs */}
-        <Breadcrumb spacing='8px' separator={<ChevronRightIcon color='gray.500' />} mb={6}>
-            <BreadcrumbItem>
-                <Link href="/library" passHref>
-                    <BreadcrumbLink>Library</BreadcrumbLink>
-                </Link>
-            </BreadcrumbItem>
-            <BreadcrumbItem isCurrentPage>
-                <BreadcrumbLink href="/library/add">Add New Book</BreadcrumbLink>
-            </BreadcrumbItem>
-        </Breadcrumb>
+    <Container maxW="7xl" py={8}>
+      <Box>
+         {/* Breadcrumbs */}
+          <Breadcrumb spacing='8px' separator={<ChevronRightIcon color='gray.500' />} mb={6}>
+              <BreadcrumbItem>
+                  <Link href="/library" passHref>
+                      <BreadcrumbLink>Library</BreadcrumbLink>
+                  </Link>
+              </BreadcrumbItem>
+              <BreadcrumbItem isCurrentPage>
+                  <BreadcrumbLink href="/library/add">Add New Book</BreadcrumbLink>
+              </BreadcrumbItem>
+          </Breadcrumb>
 
-      <Heading as="h1" size="xl" mb={6}>Add New Book</Heading>
+        <Heading as="h1" size="xl" mb={6}>Add New Book</Heading>
 
-      <BookCreateForm
-        onSubmit={handleCreateBook}
-        isLoading={isSubmitting}
-        apiError={apiError}
-      />
-    </Box>
+        <BookCreateForm
+          onSubmit={handleCreateBook}
+          isLoading={isSubmitting}
+          apiError={apiError}
+        />
+      </Box>
+    </Container>
   );
 };
 

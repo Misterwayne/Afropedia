@@ -49,7 +49,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ musicId }) => {
   const [isLoading, setIsLoading] = useState(true); // Combined loading state for metadata & audio readiness
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
 
   // --- Effect to fetch metadata and set up URLs ---
   useEffect(() => {
@@ -248,7 +248,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ musicId }) => {
              </Flex>
              <Skeleton height="10px" width="100%" mt={4} mb={3} />
              <Flex justify="center" align="center" mt={3}>
-                 <Skeleton circle size="40px" mx={4} />
+                  <Skeleton borderRadius="full" height="40px" width="40px" mx={4} />
                  <Skeleton height="20px" width="100px" />
              </Flex>
           </Box>

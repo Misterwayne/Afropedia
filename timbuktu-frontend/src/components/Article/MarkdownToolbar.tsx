@@ -3,7 +3,7 @@ import React, { RefObject } from 'react';
 import { Button, ButtonGroup, Wrap, WrapItem, Tooltip, IconButton, Select, Box } from '@chakra-ui/react';
 import {
   FaBold, FaItalic, FaLink, FaCode, FaListUl, FaListOl, FaQuoteLeft, FaImage, FaHeading, FaMinus,
-  FaMusic, FaVideo // Import media icons
+  FaMusic, FaVideo, FaBook // Import media icons
 } from 'react-icons/fa';
 
 interface MarkdownToolbarProps {
@@ -13,6 +13,8 @@ interface MarkdownToolbarProps {
   onOpenAudioModal: () => void;
   onOpenImageModal: () => void;
   onOpenVideoModal: () => void;
+  // Source management
+  onOpenSourceManager?: () => void;
 }
 
 const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
@@ -20,7 +22,8 @@ const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
   onContentChange,
   onOpenAudioModal,
   onOpenVideoModal,
-  onOpenImageModal
+  onOpenImageModal,
+  onOpenSourceManager
 }) => {
 
   // Helper function to wrap selected text or insert placeholder
@@ -165,6 +168,17 @@ const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
             </Tooltip>
           </ButtonGroup>
         </WrapItem>
+
+        {/* Source Management */}
+        {onOpenSourceManager && (
+          <WrapItem>
+            <ButtonGroup size="sm" isAttached variant="outline" bg="white">
+              <Tooltip label="Manage Sources & References" aria-label="Manage Sources">
+                <IconButton icon={<FaBook />} aria-label="Manage Sources" onClick={onOpenSourceManager} />
+              </Tooltip>
+            </ButtonGroup>
+          </WrapItem>
+        )}
 
       </Wrap>
     </Box>

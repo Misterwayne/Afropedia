@@ -52,3 +52,5 @@ uvicorn==0.34.2
 uvloop==0.21.0
 watchfiles==1.0.5
 websockets==15.0.1
+meilisearch==0.37.0
+psutil==7.0.0

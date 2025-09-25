@@ -2,7 +2,7 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
-import { Box, Heading, Text, Image, Spinner, Center, Tag, Stack, Divider, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Button, Flex } from '@chakra-ui/react';
+import { Box, Heading, Text, Image, Spinner, Center, Tag, Stack, Divider, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Button, Flex, Container } from '@chakra-ui/react';
 import { ChevronRightIcon, EditIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import apiClient from '@/lib/api'; // Adjust path
@@ -70,20 +70,21 @@ const BookDetailPage = ({ book, error }: InferGetServerSidePropsType<typeof getS
   const pubDate = book.publication_date ? new Date(book.publication_date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric'}) : 'N/A';
 
   return (
-    <Box>
-       {/* Breadcrumbs */}
-        <Breadcrumb spacing='8px' separator={<ChevronRightIcon color='gray.500' />} mb={6}>
-            <BreadcrumbItem>
-                <Link href="/library" passHref>
-                    <BreadcrumbLink>Library</BreadcrumbLink>
-                </Link>
-            </BreadcrumbItem>
-            <BreadcrumbItem isCurrentPage>
-                <BreadcrumbLink href={`/library/${book.id}`}>{book.title}</BreadcrumbLink>
-            </BreadcrumbItem>
-        </Breadcrumb>
+    <Container maxW="7xl" py={8}>
+      <Box>
+         {/* Breadcrumbs */}
+          <Breadcrumb spacing='8px' separator={<ChevronRightIcon color='gray.500' />} mb={6}>
+              <BreadcrumbItem>
+                  <Link href="/library" passHref>
+                      <BreadcrumbLink>Library</BreadcrumbLink>
+                  </Link>
+              </BreadcrumbItem>
+              <BreadcrumbItem isCurrentPage>
+                  <BreadcrumbLink href={`/library/${book.id}`}>{book.title}</BreadcrumbLink>
+              </BreadcrumbItem>
+          </Breadcrumb>
 
-      <Flex direction={{ base: 'column', md: 'row' }} gap={8}>
+        <Flex direction={{ base: 'column', md: 'row' }} gap={8}>
          {/* Cover Image */}
           <Box flexShrink={0} w={{ base: '100%', md: '300px' }}>
              <Image
@@ -131,8 +132,9 @@ const BookDetailPage = ({ book, error }: InferGetServerSidePropsType<typeof getS
 
              {/* Add Edit/Delete buttons here later if needed and authorized */}
           </Box>
-      </Flex>
-    </Box>
+        </Flex>
+      </Box>
+    </Container>
   );
 };
 

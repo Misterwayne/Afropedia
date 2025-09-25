@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
-import { Box, Heading, useToast, Flex, Text, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Button, Center, Spinner } from '@chakra-ui/react';
+import { Box, Heading, useToast, Flex, Text, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Button, Center, Spinner, Container } from '@chakra-ui/react';
 import { ChevronRightIcon } from '@chakra-ui/icons';
 import Link from 'next/link';
 import { useRequireAuth } from '@/hooks/useRequireAuth'; // Import if editing requires login
@@ -128,31 +128,33 @@ const EditBookPage = ({ book, error: initialError }: InferGetServerSidePropsType
 
 
   return (
-    <Box>
-      {/* Breadcrumbs */}
-       <Breadcrumb spacing='8px' separator={<ChevronRightIcon color='gray.500' />} mb={6}>
-           <BreadcrumbItem>
-               <Link href="/library" passHref><BreadcrumbLink>Library</BreadcrumbLink></Link>
-           </BreadcrumbItem>
-            <BreadcrumbItem>
-                <Link href={`/library/${book.id}`} passHref><BreadcrumbLink>{book.title}</BreadcrumbLink></Link>
-            </BreadcrumbItem>
-           <BreadcrumbItem isCurrentPage>
-               <BreadcrumbLink href={`/library/edit/${book.id}`}>Edit</BreadcrumbLink>
-           </BreadcrumbItem>
-       </Breadcrumb>
+    <Container maxW="7xl" py={8}>
+      <Box>
+        {/* Breadcrumbs */}
+         <Breadcrumb spacing='8px' separator={<ChevronRightIcon color='gray.500' />} mb={6}>
+             <BreadcrumbItem>
+                 <Link href="/library" passHref><BreadcrumbLink>Library</BreadcrumbLink></Link>
+             </BreadcrumbItem>
+              <BreadcrumbItem>
+                  <Link href={`/library/${book.id}`} passHref><BreadcrumbLink>{book.title}</BreadcrumbLink></Link>
+              </BreadcrumbItem>
+             <BreadcrumbItem isCurrentPage>
+                 <BreadcrumbLink href={`/library/edit/${book.id}`}>Edit</BreadcrumbLink>
+             </BreadcrumbItem>
+         </Breadcrumb>
 
-      <Heading as="h1" size="xl" mb={6}>Edit Book: {book.title}</Heading>
+        <Heading as="h1" size="xl" mb={6}>Edit Book: {book.title}</Heading>
 
-      {/* Render the form in edit mode, passing initial data */}
-      <BookCreateForm
-        onSubmit={handleUpdateBook}
-        isLoading={isSubmitting}
-        apiError={apiError}
-        isEditMode={true} // <<< Set edit mode
-        defaultValues={book} // <<< Pass fetched book data as defaultValues
-      />
-    </Box>
+        {/* Render the form in edit mode, passing initial data */}
+        <BookCreateForm
+          onSubmit={handleUpdateBook}
+          isLoading={isSubmitting}
+          apiError={apiError}
+          isEditMode={true} // <<< Set edit mode
+          defaultValues={book} // <<< Pass fetched book data as defaultValues
+        />
+      </Box>
+    </Container>
   );
 };
 

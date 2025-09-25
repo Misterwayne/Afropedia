@@ -7,16 +7,20 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from typing import List, Annotated 
 
 from models import VideoMetadataSchema, VideoMetadataCreate 
-from crud import video_crud 
-from database import get_session
-from datetime import datetime
+from supabase_crud import (
+    get_all_video_metadata_supabase, 
+    get_video_metadata_by_id_supabase, 
+    get_video_content_by_id_supabase,
+    create_video_content_supabase,
+    create_video_metadata_supabase
+)
+from datetime import datetime, timezone
 
 router = APIRouter()
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_video(
     file: Annotated[UploadFile, File()],
-    db: AsyncSession = Depends(get_session),
 ):
     """Uploads a video file."""
     if not file.content_type or not file.content_type.startswith("video/"): # Generic video check
@@ -25,35 +29,44 @@ async def upload_video(
     try:
         file_content = await file.read()
 
-        db_content = await video_crud.create_video_content(session=db, binary_data=file_content)
+        # Create content entry first using Supabase
+        db_content = await create_video_content_supabase(binary_data=file_content)
+        if not db_content:
+            raise HTTPException(status_code=500, detail="Failed to create video content")
 
-        metadata_in = VideoMetadataCreate(
+        # Create metadata entry, linking to content using Supabase
+        video_metadata = await create_video_metadata_supabase(
+            content_id=db_content["id"],
             filename=file.filename or "untitled",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc).isoformat()
         )
+        if not video_metadata:
+            raise HTTPException(status_code=500, detail="Failed to create video metadata")
 
-        video_metadata = await video_crud.create_video_metadata(
-            session=db,
-            metadata_in=metadata_in,
-            content_id=db_content.id
-        )
         return VideoMetadataSchema.model_validate(video_metadata)
 
     except Exception as e:
-        await db.rollback()
         print(f"Error uploading video: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error during video upload: {e}")
 
 
 @router.get("/stream/{video_id}")
-async def stream_video(video_id: int, db: AsyncSession = Depends(get_session)):
+async def stream_video(video_id: int):
     """Streams the content of a specific video."""
-    video = await video_crud.get_video_metadata_by_id(session=db, video_id=video_id)
+    # Get video metadata
+    video = await get_video_metadata_by_id_supabase(video_id=video_id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video metadata not found")
 
-    if not video or not video.content or not video.content.binary_data:
+    # Get video content using content_id from metadata
+    content_id = video.get("content_id")
+    if not content_id:
+        raise HTTPException(status_code=404, detail="Video content ID not found")
+    
+    video_data = await get_video_content_by_id_supabase(content_id=content_id)
+    if not video_data:
         raise HTTPException(status_code=404, detail="Video content not found")
 
-    video_data = video.content.binary_data
     headers = {
         "content-type": "video/mp4",
         "accept-ranges": "bytes",
@@ -64,10 +77,9 @@ async def stream_video(video_id: int, db: AsyncSession = Depends(get_session)):
 
 @router.get("/", response_model=List[VideoMetadataSchema])
 async def list_videos(
-    db: AsyncSession = Depends(get_session),
     skip: int = 0,
     limit: int = 100
 ):
     """Retrieves a list of video metadata entries."""
-    videos = await video_crud.get_all_video_metadata(session=db, skip=skip, limit=limit)
+    videos = await get_all_video_metadata_supabase(skip=skip, limit=limit)
     return [VideoMetadataSchema.model_validate(video) for video in videos]

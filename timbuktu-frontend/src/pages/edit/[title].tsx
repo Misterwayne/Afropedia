@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useRequireAuth } from '@/hooks/useRequireAuth'; // Adjust path
 import { useAuth } from '@/context/AuthContext'; // Adjust path
-import { Heading, Box, useToast, Text, Flex } from '@chakra-ui/react';
+import { Heading, Box, useToast, Text, Flex, Container } from '@chakra-ui/react';
 import ArticleEditor, { ArticleFormData } from '@/components/Article/ArticleEditor'; // Adjust path
 import apiClient from '@/lib/api'; // Adjust path
 import Spinner from '@/components/UI/Spinner'; // Adjust path
@@ -100,18 +100,22 @@ const EditArticlePage = () => {
     };
 
     return (
-        <Box>
-        <Heading as="h1" size="xl" mb={6}>
-            Editing: {article.title.replace(/_/g, ' ')}
-        </Heading>
-        <ArticleEditor
-            onSubmit={handleUpdateArticle}
-            isSubmitting={isSubmitting}
-            apiError={submitError}
-            defaultValues={editorDefaultValues} // Pass fetched content
-            isCreateMode={false}
-        />
-        </Box>
+        <Container maxW="7xl" py={8}>
+            <Box>
+                <Heading as="h1" size="xl" mb={6}>
+                    Editing: {article.title.replace(/_/g, ' ')}
+                </Heading>
+                <ArticleEditor
+                    onSubmit={handleUpdateArticle}
+                    isSubmitting={isSubmitting}
+                    apiError={submitError}
+                    defaultValues={editorDefaultValues} // Pass fetched content
+                    isCreateMode={false}
+                    articleId={article.id}
+                    articleTitle={article.title}
+                />
+            </Box>
+        </Container>
     );
 };
 

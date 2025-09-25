@@ -82,29 +82,13 @@ const MediaUploadModal: React.FC<MediaUploadModalProps> = ({
        const id = response.data.id; // Assuming response structure provides 'id'
        const publicUrl = response.data.public_url;
        
-       if (mediaType === 'image') {
-          const id = response.data.id; // Get Metadata ID from response
-          const filename = response.data.filename || 'image'; // Get filename for alt text
-     
-          if (typeof id !== 'number') {
-              throw new Error(`API response did not include a valid numeric ID for the uploaded image metadata.`);
-          }
-          // Construct the STREAMING URL using the METADATA ID
-          const cleanBaseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
-          // Point to the correct stream endpoint using the metadata ID
-          const streamUrl = `${cleanBaseUrl}/images/stream/${id}`;
-        // Construct the STREAMING URL
-        // Insert standard Markdown for image
-        onUploadComplete(typeName, id);
-        toast({ title: `Image Upload Successful`, description: `Ready to insert.`, status: 'success', /*...*/});
-     } else {
-
+       // Validate that we got a valid ID
        if (typeof id !== 'number') {
            console.error("API Response Data:", response.data); // Log response for debugging
            throw new Error(`API response did not include a valid numeric ID for the uploaded ${mediaType}.`);
        }
-    }
 
+       // Show success toast
        toast({
          title: `${typeName} Upload Successful`,
          description: `ID: ${id}. Tag [[${typeName}:${id}]] ready to insert.`,
@@ -114,7 +98,7 @@ const MediaUploadModal: React.FC<MediaUploadModalProps> = ({
          position: 'top',
        });
 
-       // Call the completion callback to insert the tag in the editor
+       // Call the completion callback to insert the tag in the editor (ONLY ONCE)
        onUploadComplete(typeName, id);
        setUploadProgress(null);
        onClose(); // Close modal on success

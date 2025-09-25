@@ -1,6 +1,6 @@
 // pages/library/index.tsx
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Heading, Input, InputGroup, InputLeftElement, Flex, IconButton, Link, Button, VStack } from '@chakra-ui/react';
+import { Box, Heading, Input, InputGroup, InputLeftElement, Flex, IconButton, Link, Button, VStack, Container } from '@chakra-ui/react';
 import { SearchIcon, CloseIcon, AddIcon } from '@chakra-ui/icons';
 import apiClient from '@/lib/api'; // Adjust path
 import { Book } from '@/types/book'; // Adjust path
@@ -52,7 +52,7 @@ const LibraryPage = () => {
     }
 
     return (
-        <Box>
+        <Container maxW="7xl" py={8}>
             <Flex justify="space-between" align="center" mb={6} wrap="wrap">
                 <VStack spacing={4} align="flex-start">
 
@@ -99,7 +99,7 @@ const LibraryPage = () => {
 
             {/* Add Pagination controls here later */}
 
-        </Box>
+        </Container>
     );
 };
 

@@ -4,10 +4,12 @@ import ReactMarkdown from 'react-markdown';
 import { Box, Link as ChakraLink, Text, Code, Heading, List, ListItem, Image, AspectRatio } from '@chakra-ui/react';
 import Link from 'next/link'; // For internal Wikilinks
 import remarkSlug from 'remark-slug'; // Adds slugs (IDs) to headings
-import { PluggableList } from 'react-markdown/lib/react-markdown'; // Type for plugins
-import { Root } from 'remark-parse/lib'; // Type for AST Root
+import rehypeRaw from 'rehype-raw'; // Allows raw HTML in markdown
+// Type for plugins - using any for now to avoid type issues
+// Type for AST Root - using any for now to avoid import issues
 import { visit } from 'unist-util-visit'; // Utility for visiting AST nodes
 import AudioPlayer from '../Media/AudioPlayer';
+import ArticleSources from './ArticleSources';
 
 /**
  * Defines the structure for headings extracted for Table of Contents.
@@ -26,6 +28,8 @@ interface ArticleViewerProps {
   content: string;
   /** Optional callback function invoked with extracted headings. */
   onHeadingsExtracted?: (headings: ExtractedHeading[]) => void;
+  /** Article title for reference lookup */
+  articleTitle?: string;
 }
 
 // Helper function to recursively get text content from Markdown AST nodes
@@ -39,8 +43,8 @@ const getNodeText = (node: any): string => {
 
 
 // Custom Remark plugin factory to extract headings and their IDs/levels
-const remarkExtractHeadings = (options: { onHeadingsExtracted?: (headings: ExtractedHeading[]) => void }): (tree: Root) => void => {
-  return (tree: Root) => {
+const remarkExtractHeadings = (options: { onHeadingsExtracted?: (headings: ExtractedHeading[]) => void }): (tree: any) => void => {
+  return (tree: any) => {
     // Only proceed if the callback function is actually provided
     if (!options.onHeadingsExtracted) {
         return;
@@ -72,36 +76,57 @@ const normalizeWikiTitle = (title: string): string => {
  * Renders Markdown content, handling standard elements, Wikilinks,
  * and custom embedded media tags ([[Audio:ID]], [[Video:ID]]).
  */
-const ArticleViewer: React.FC<ArticleViewerProps> = ({ content, onHeadingsExtracted = () => {} }) => {
+const ArticleViewer: React.FC<ArticleViewerProps> = ({ content, onHeadingsExtracted = () => {}, articleTitle }) => {
 
   // Configure Remark plugins: add IDs to headings, then extract them
-  const remarkPlugins: PluggableList = [
+  const remarkPlugins: any[] = [
     remarkSlug,
     [remarkExtractHeadings, { onHeadingsExtracted }],
   ];
 
   // Retrieve the base URL for backend API calls (streaming endpoints)
-  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, ''); // Ensure no trailing slash
+  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, ''); // Ensure no trailing slash
 
   // Preprocess the raw Markdown content:
-  // Find all instances of [[Audio:ID]] or [[Video:ID]] and convert them
-  // into standard Markdown links like [Audio ID]([[Audio:ID]]).
-  // This allows the custom 'a' component renderer to easily detect them via the href.
-  const processedContent = content.replace(
-      /\[\[(Audio|Video|Image):(\d+)]]/g, // Regex: [[(Audio or Video): (one or more digits)]]
-      (match, type, id) => `[${type} ${id}]([[${type}:${id}]])` // Replacement: [Type ID]([[Type:ID]])
+  // Replace media tags with HTML img/video/audio tags directly
+  const processedContent = content
+    // Process footnote references [^1] -> clickable footnotes
+    .replace(
+      /\[\^(\d+)\]/g,
+      (match, refNumber) => {
+        return `<sup><a href="#ref-${refNumber}" id="ref-link-${refNumber}" style="color: #3182ce; text-decoration: none; font-weight: bold;">[${refNumber}]</a></sup>`;
+      }
+    )
+    .replace(
+      /\[\[Image:(\d+)]]/g, // Match [[Image:ID]]
+      (match, id) => {
+          const streamUrl = `${API_BASE_URL}/images/stream/${id}`;
+          return `<img src="${streamUrl}" alt="Image ${id}" style="max-width: 640px; max-height: 200px; border-radius: 8px; margin: 16px 0;" />`;
+      }
+  ).replace(
+      /\[\[Video:(\d+)]]/g, // Match [[Video:ID]]
+      (match, id) => {
+          const streamUrl = `${API_BASE_URL}/videos/stream/${id}`;
+          return `<video controls style="max-width: 640px; width: 100%; border-radius: 8px; margin: 16px 0;"><source src="${streamUrl}" type="video/mp4">Your browser does not support video playback.</video>`;
+      }
+  ).replace(
+      /\[\[Audio:(\d+)]]/g, // Match [[Audio:ID]]
+      (match, id) => {
+          const streamUrl = `${API_BASE_URL}/music/stream/${id}`;
+          return `<audio controls style="width: 100%; margin: 16px 0;"><source src="${streamUrl}" type="audio/mpeg">Your browser does not support audio playback.</audio>`;
+      }
   );
 
-  // --- DEBUG LOG 1 (Uncomment to check preprocessing result) ---
-  // console.log("--- Processed Markdown Content ---");
-  // console.log(processedContent);
-  // console.log("---------------------------------");
-
+  // Debug: Check if HTML is being generated correctly
+  if (processedContent.includes('<img')) {
+    console.log("✅ HTML img tags detected in processed content");
+  }
 
   return (
     <Box className="markdown-content"> {/* Optional class for global styling */}
       <ReactMarkdown
          remarkPlugins={remarkPlugins}
+         rehypePlugins={[rehypeRaw]} // Allow raw HTML processing
          children={processedContent} // Render the preprocessed content
          // Define custom renderers for specific HTML elements
          components={{
@@ -119,7 +144,7 @@ const ArticleViewer: React.FC<ArticleViewerProps> = ({ content, onHeadingsExtrac
             blockquote: ({node, ...props}) => <Box as="blockquote" borderLeftWidth="4px" borderColor="teal.200" bg="teal.50" pl={4} py={2} my={4} color="gray.700" fontStyle="italic" {...props} />,
             hr: ({node, ...props}) => <Box as="hr" my={8} borderColor="gray.200" {...props} />,
             img: ({node, ...props}) => <Image my={4} maxW="100%" borderRadius="md" boxShadow="sm" {...props as any} alt={props.alt || ''} />,
-             code: ({node, inline, className, children, ...props}) => {
+             code: ({node, inline, className, children, ...props}: any) => {
                 const match = /language-(\w+)/.exec(className || '');
                 // Basic check for block vs inline code
                 const isBlock = node?.position?.start?.line !== node?.position?.end?.line || String(children).includes('\n');
@@ -138,63 +163,9 @@ const ArticleViewer: React.FC<ArticleViewerProps> = ({ content, onHeadingsExtrac
 
             // --- Inline Element Renderers ---
 
-            // Custom renderer for Anchor <a> tags to handle Media, Wikilinks, and Standard links
+            // Custom renderer for Anchor <a> tags to handle Wikilinks and Standard links
             a: ({node, href, children, ...props}) => {
-                // --- DEBUG LOG 2 (Uncomment to see what href/node is received) ---
-                console.log("Rendering link - Href:", href, "Node:", node, "Children:", children);
-
-                // Prioritize checking for our custom media tag syntax in the href
-                // The href should look like "[[Audio:ID]]" or "[[Video:ID]]" due to preprocessing
-                const mediaMatch = (children?.valueOf() as string).split(' ');
-
-                // --- DEBUG LOG 3 (Uncomment to see if media regex matched) ---
-                console.log("Media match result:", mediaMatch);
-
-                if (mediaMatch) {
-                    // --- DEBUG LOG 4 (Uncomment to confirm media rendering path taken) ---
-                    const type = mediaMatch[0].toLowerCase(); // 'audio' or 'video'
-                    const id = mediaMatch[1];
-                    const imgUrl = mediaMatch[1];
-                    console.log("   - Media Type:", type);
-                    const endpoint = type === 'audio' ? 'music' : type === 'video' ? 'videos' : 'images'; // Determine endpoint based on type
-                    const numericId = parseInt(id, 10); //
-                    const streamUrl = `${API_BASE_URL}/${endpoint}/stream/${id}`;
-
-                    // --- DEBUG LOG 5 (Uncomment to verify stream URL) ---
-                     console.log("   - Stream URL:", streamUrl);
-
-                    // Render HTML5 audio player
-                    if (type === 'audio') {
-                      if (isNaN(numericId)) {
-                          return <Text color="red.500">[Invalid Audio ID: {id}]</Text>
-                      }
-                      // Render the custom component, passing only the ID
-                      return <AudioPlayer musicId={numericId} />;
-                  }
-                    // Render HTML5 video player
-                    else if (type === 'video') {
-                        return (
-                            <Box my={4} maxW="640px" data-media-type="video" data-media-id={id}>
-                                <AspectRatio ratio={16 / 9}>
-                                    <video controls src={streamUrl} style={{ width: '100%', height: '100%', borderRadius: 'md' }}>
-                                        Your browser does not support the video tag. (Video ID: {id})
-                                    </video>
-                                </AspectRatio>
-                            </Box>
-                        );
-                    }
-                    else if (type === 'image') {
-                        return (
-                            <Box my={4} maxW="640px" data-media-type="image" data-media-id={id}>
-                                <Image src={streamUrl} alt="Image alt" maxH="200px" borderRadius="md" />
-                            </Box>
-                        );
-                    }
-                    // Fallback if type is somehow invalid (shouldn't happen with regex)
-                    console.error("Media match found but type was not audio or video?", type);
-                    return <Text color="red.500">[Error rendering media tag: Invalid type]</Text>;
-                }
-
+                // Check for wikilinks
                 const nodeText = getNodeText(node);
                 const wikilinkMatch = nodeText?.match(/^\[\[(.+?)]]$/); 
                 let potentialHrefForWikilink = href; 
@@ -202,7 +173,7 @@ const ArticleViewer: React.FC<ArticleViewerProps> = ({ content, onHeadingsExtrac
                     potentialHrefForWikilink = node?.properties?.href as string 
                  }
 
-
+                // Process as wikilink
                 if (potentialHrefForWikilink?.match(/^\[\[.+?]]$/)) { 
                    const titleMatch = potentialHrefForWikilink.match(/^\[\[([^|]+?)(\|.+)?]]$/);
                    if (titleMatch && titleMatch[1]) {
@@ -239,6 +210,12 @@ const ArticleViewer: React.FC<ArticleViewerProps> = ({ content, onHeadingsExtrac
             em: ({node, ...props}) => <Text as="em" fontStyle="italic" {...props} />,
          }}
       />
+      {articleTitle && (
+        <ArticleSources 
+          articleTitle={articleTitle}
+          showTitle={true}
+        />
+      )}
     </Box>
   );
 };

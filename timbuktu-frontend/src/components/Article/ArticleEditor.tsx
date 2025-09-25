@@ -10,6 +10,7 @@ import ErrorMessage from '@/components/UI/ErrorMessage';
 import MarkdownToolbar from './MarkdownToolbar';
 import ArticleViewer, { ExtractedHeading } from './ArticleViewer';
 import MediaUploadModal from './MediaUploadModal'; // Import the modal
+import SourceManager from './SourceManager'; // Import source management
 import { useRouter } from 'next/router';
 
 // Form data structure for the main article edit/create form
@@ -25,6 +26,8 @@ interface ArticleEditorProps {
   isSubmitting: boolean; // For the main article save button
   apiError: string | null; // Error from the main article save attempt
   isCreateMode?: boolean;
+  articleId?: number; // For source management
+  articleTitle?: string; // For source management
 }
 
 const ArticleEditor: React.FC<ArticleEditorProps> = ({
@@ -33,6 +36,8 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
   isSubmitting,
   apiError, // This is for the ARTICLE save, not media upload
   isCreateMode = false,
+  articleId,
+  articleTitle,
 }) => {
   const {
     register,
@@ -53,6 +58,10 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
   // State for the media upload modal
   const { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
   const [modalMediaType, setModalMediaType] = useState<'audio' | 'video' | 'image' | null>(null);
+
+  // State for source management
+  const [showSourceManager, setShowSourceManager] = useState(false);
+  const [sources, setSources] = useState<any[]>([]);
 
   // --- Unsaved Changes Warning Effect ---
   useEffect(() => {
@@ -125,6 +134,32 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
       }, 0);
    };
 
+   // --- Callback for Source Manager: Insert Reference ---
+   const handleReferenceInsert = (referenceNumber: number) => {
+      const textarea = textareaRef.current;
+      const currentContent = getValues('content') || '';
+      if (!textarea) return;
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const referenceMarkdown = `[^${referenceNumber}]`;
+      const before = currentContent.substring(0, start);
+      const selectedText = currentContent.substring(start, end);
+      const after = currentContent.substring(end);
+
+      // Insert the reference, keeping selected text if any
+      const newContent = `${before}${selectedText}${referenceMarkdown}${after}`;
+
+      // Update form state & mark as dirty
+      setValue('content', newContent, { shouldDirty: true });
+
+      // Refocus and position cursor
+      setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(start + selectedText.length + referenceMarkdown.length, start + selectedText.length + referenceMarkdown.length);
+      }, 0);
+   };
+
 
   return (
     <Box w="100%">
@@ -160,6 +195,7 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
                       onOpenAudioModal={handleOpenAudioModal}
                       onOpenVideoModal={handleOpenVideoModal}
                       onOpenImageModal={handleOpenImageModal}
+                      onOpenSourceManager={() => setShowSourceManager(true)}
                    />
 
                    {/* Responsive Editor/Preview Layout */}
@@ -183,7 +219,7 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
                          </TabPanel>
                          <TabPanel borderWidth="1px" borderRadius="md">
                               {/* Use watched value for preview */}
-                              <ArticleViewer content={watchedContent || ''} />
+                              <ArticleViewer content={watchedContent || ''} articleTitle={articleTitle} />
                          </TabPanel>
                       </TabPanels>
                    </Tabs>
@@ -212,7 +248,7 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
                       {/* Live Preview */}
                       <GridItem borderWidth="1px" borderRadius="md" p={3} bg="white" overflowY="auto" maxH="70vh">
                          {/* Use watched value for live preview */}
-                         <ArticleViewer content={watchedContent || ''} />
+                         <ArticleViewer content={watchedContent || ''} articleTitle={articleTitle} />
                       </GridItem>
                    </Grid>
 
@@ -254,6 +290,18 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({
          mediaType={modalMediaType}
          onUploadComplete={handleMediaInsert} // Pass the insertion function
       />
+
+      {/* Source Management */}
+      {showSourceManager && articleId && articleTitle && (
+        <SourceManager
+          articleId={articleId}
+          articleTitle={articleTitle}
+          onReferencesChange={(references) => {
+            setSources(references);
+          }}
+          onInsertReference={handleReferenceInsert}
+        />
+      )}
     </Box>
   );
 };

@@ -2,18 +2,15 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 from auth import security
-from database import get_session
-from crud import user_crud
-from models import User, UserRead
+from auth_supabase import get_user_by_username_supabase
+from models import UserRead
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    session: AsyncSession = Depends(get_session)
+    token: str = Depends(oauth2_scheme)
 ) -> UserRead:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -27,7 +24,7 @@ async def get_current_user(
     if username is None:
         raise credentials_exception
 
-    user = await user_crud.get_user_by_username(session, username=username)
+    user = await get_user_by_username_supabase(username=username)
     if user is None:
         raise credentials_exception
     return UserRead.model_validate(user)

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useRequireAuth } from '@/hooks/useRequireAuth'; // Adjust path
 import { useAuth } from '@/context/AuthContext'; // Adjust path
-import { Heading, Box, useToast, Flex, Text } from '@chakra-ui/react';
+import { Heading, Box, useToast, Flex, Text, Container } from '@chakra-ui/react';
 import ArticleEditor, { ArticleFormData } from '@/components/Article/ArticleEditor'; // Adjust path
 import apiClient from '@/lib/api'; // Adjust path
 import Spinner from '@/components/UI/Spinner'; // Adjust path
@@ -52,14 +52,22 @@ const NewArticlePage = () => {
     };
   
     if (!isAuthCheckComplete) {
-      return <Flex justify="center" align="center" minH="50vh"><Spinner size="xl" /></Flex>;
+      return (
+        <Container maxW="7xl" py={8}>
+          <Flex justify="center" align="center" minH="50vh"><Spinner size="xl" /></Flex>
+        </Container>
+      );
     }
     if (!isAuthenticated) {
-       return <Text>Redirecting to login...</Text>;
+       return (
+        <Container maxW="7xl" py={8}>
+          <Text>Redirecting to login...</Text>
+        </Container>
+       );
     }
   
     return (
-      <Box>
+      <Container maxW="7xl" py={8}>
         <Heading as="h1" size="xl" mb={6}>Create New Article</Heading>
         <ArticleEditor
           onSubmit={handleCreateArticle}
@@ -68,8 +76,9 @@ const NewArticlePage = () => {
           isCreateMode={true}
           // Pass empty defaultValues explicitly for create mode
           defaultValues={{ title: '', content: '', comment: ''}}
+          // No articleId or articleTitle for new articles
         />
-      </Box>
+      </Container>
     );
   };
   

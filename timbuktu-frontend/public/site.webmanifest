@@ -1,0 +1,22 @@
+{
+  "name": "Afropedia",
+  "short_name": "Afropedia",
+  "description": "The premier African encyclopedia with academic peer review",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/afrologo-textless.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#8B4513",
+  "background_color": "#fefcf7",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/"
+}

@@ -7,8 +7,13 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from typing import List, Optional, Annotated # Use Annotated for Form metadata in newer FastAPI
 
 from models import MusicMetadataSchema, MusicMetadataCreate # Import schemas
-from crud import music_crud # Import music CRUD functions
-from database import get_session
+from supabase_crud import (
+    get_all_music_metadata_supabase, 
+    get_music_metadata_by_id_supabase, 
+    get_music_content_by_id_supabase,
+    create_music_content_supabase,
+    create_music_metadata_supabase
+)
 
 router = APIRouter()
 
@@ -20,7 +25,6 @@ async def upload_music(
     album: Annotated[str, Form()],
     file: Annotated[UploadFile, File()],
     cover: Annotated[Optional[UploadFile], File()] = None, # Make cover optional
-    db: AsyncSession = Depends(get_session)
 ):
     """Uploads music file and its metadata."""
     if not file.content_type or not file.content_type.startswith("audio/"): # More generic audio check
@@ -31,39 +35,47 @@ async def upload_music(
         file_content = await file.read()
         cover_content = await cover.read() if cover else None
 
-        # Create content entry first
-        db_content = await music_crud.create_music_content(session=db, binary_data=file_content)
+        # Create content entry first using Supabase
+        db_content = await create_music_content_supabase(binary_data=file_content)
+        if not db_content:
+            raise HTTPException(status_code=500, detail="Failed to create music content")
 
-        # Prepare metadata DTO
-        metadata_in = MusicMetadataCreate(title=title, artist=artist, album=album) # content_id set in crud
-
-        # Create metadata entry, linking to content
-        music_metadata = await music_crud.create_music_metadata(
-            session=db,
-            metadata_in=metadata_in,
-            content_id=db_content.id,
+        # Create metadata entry, linking to content using Supabase
+        music_metadata = await create_music_metadata_supabase(
+            content_id=db_content["id"],
+            title=title,
+            artist=artist,
+            album=album,
             cover_image=cover_content
         )
+        if not music_metadata:
+            raise HTTPException(status_code=500, detail="Failed to create music metadata")
 
         # Return metadata using the schema
         return MusicMetadataSchema.model_validate(music_metadata)
 
     except Exception as e:
-        await db.rollback() # Ensure rollback on any error during the process
         print(f"Error uploading music: {e}") # Log the error server-side
         raise HTTPException(status_code=500, detail=f"Internal server error during music upload: {e}")
 
 @router.get("/stream/{music_id}")
-async def stream_music(music_id: int, db: AsyncSession = Depends(get_session)):
+async def stream_music(music_id: int):
     """Streams the audio content of a specific music track."""
-    music = await music_crud.get_music_metadata_by_id(session=db, music_id=music_id)
+    # Get music metadata
+    music = await get_music_metadata_by_id_supabase(music_id=music_id)
+    if not music:
+        raise HTTPException(status_code=404, detail="Music metadata not found")
 
-    if not music or not music.music_content or not music.music_content.binary_data:
+    # Get music content using content_id from metadata
+    content_id = music.get("content_id")
+    if not content_id:
+        raise HTTPException(status_code=404, detail="Music content ID not found")
+    
+    audio_data = await get_music_content_by_id_supabase(content_id=content_id)
+    if not audio_data:
         raise HTTPException(status_code=404, detail="Music content not found")
 
-    audio_data = music.music_content.binary_data
-    # Basic streaming, not handling Range requests here
-    # You'll need more complex logic for true byte range streaming
+    # Basic streaming headers
     headers = {
         "content-type": "audio/mpeg", # Assuming MP3, adjust if needed
         "accept-ranges": "bytes",
@@ -75,19 +87,18 @@ async def stream_music(music_id: int, db: AsyncSession = Depends(get_session)):
 
 @router.get("/", response_model=List[MusicMetadataSchema])
 async def list_music(
-    db: AsyncSession = Depends(get_session),
     skip: int = 0,
     limit: int = 100
 ):
     """Retrieves a list of music metadata entries."""
-    music_list = await music_crud.get_all_music_metadata(session=db, skip=skip, limit=limit)
+    music_list = await get_all_music_metadata_supabase(skip=skip, limit=limit)
     # Validate each item against the response schema
     return [MusicMetadataSchema.model_validate(music) for music in music_list]
 
 @router.get("/{music_id}", response_model=MusicMetadataSchema)
-async def get_single_music(music_id: int, db: AsyncSession = Depends(get_session)):
+async def get_single_music(music_id: int):
     """Retrieves metadata for a single music track."""
-    music = await music_crud.get_music_metadata_by_id(session=db, music_id=music_id)
+    music = await get_music_metadata_by_id_supabase(music_id=music_id)
     if not music:
         raise HTTPException(status_code=404, detail="Music metadata not found")
     # No need to check music_content here, just return metadata

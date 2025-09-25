@@ -4,8 +4,11 @@ from typing import List, Optional
 
 from database import get_session
 from crud import book_crud # Import book CRUD functions
-from models import BookRead, BookCreate, BookUpdate # Import book schemas
-# from auth.dependencies import get_current_user # Import if protecting routes
+from models import BookRead, BookCreate, BookUpdate, UserRead # Import book schemas
+from supabase_crud import get_books_supabase, create_book_supabase, get_book_by_id_supabase, update_book_supabase, delete_book_supabase
+from auth.dependencies import get_current_user # Import if protecting routes
+from crud.moderation_crud import submit_for_moderation
+from moderation_models import Priority
 
 router = APIRouter()
 
@@ -28,56 +31,70 @@ async def create_book(
 
 @router.get("/", response_model=List[BookRead])
 async def read_books(
-    session: AsyncSession = Depends(get_session),
     skip: int = 0,
     limit: int = 100,
     title: Optional[str] = Query(None, description="Filter by book title")) -> List[BookRead]:
     """Retrieves a list of books with optional filtering by title."""
-    if title:
-        books = await book_crud.get_book_by_title(session, title=title)
-    else:
-        books = await book_crud.get_books(session, skip=skip, limit=limit)
+    books = await get_books_supabase(skip=skip, limit=limit)
     return books
 
-@router.get("/{book_id}", response_model=BookRead)
+@router.get("/{book_id}")
 async def read_book_by_id(
-    *,
-    session: AsyncSession = Depends(get_session),
     book_id: int
 ):
     """Retrieves a specific book by its ID."""
-    book = await book_crud.get_book_by_id(session, book_id=book_id)
+    book = await get_book_by_id_supabase(book_id=book_id)
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
-    return book
+    
+    # Convert to dict and map summary to description for frontend compatibility
+    book_dict = book.model_dump()
+    book_dict["description"] = book_dict.pop("summary", None)
+    return book_dict
 
 @router.patch("/{book_id}", response_model=BookRead)
 async def update_book(
     *,
-    session: AsyncSession = Depends(get_session),
     book_id: int,
-    book_in: BookUpdate
+    book_in: BookUpdate,
+    current_user: UserRead = Depends(get_current_user)
 ):
     """Updates an existing book."""
-    db_book = await book_crud.get_book_by_id(session, book_id=book_id)
-    if not db_book:
+    # Check if book exists
+    existing_book = await get_book_by_id_supabase(book_id=book_id)
+    if not existing_book:
         raise HTTPException(status_code=404, detail="Book not found")
     
-    updated_book = await book_crud.update_book(session=session, db_book=db_book, book_in=book_in)
-    return updated_book
+    # Update the book
+    book_update_data = book_in.model_dump(exclude_unset=True)
+    updated_book = await update_book_supabase(book_id=book_id, book_update=book_update_data)
+    if not updated_book:
+        raise HTTPException(status_code=500, detail="Failed to update book")
+    
+    # Submit updated book for moderation (unless user is admin/moderator)
+    if current_user.role not in ["admin", "moderator"]:
+        await submit_for_moderation(
+            content_type="book",
+            content_id=updated_book.id,
+            submitted_by=current_user.id,
+            priority=Priority.NORMAL
+        )
+    
+    return BookRead.model_validate(updated_book)
 
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_book(
-    *,
-    session: AsyncSession = Depends(get_session),
     book_id: int
 ):
     """Deletes a book."""
-    db_book = await book_crud.get_book_by_id(session, book_id=book_id)
-    if not db_book:
+    # Check if book exists
+    existing_book = await get_book_by_id_supabase(book_id=book_id)
+    if not existing_book:
         raise HTTPException(status_code=404, detail="Book not found")
     
-    await book_crud.delete_book(session=session, db_book=db_book)
+    success = await delete_book_supabase(book_id=book_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete book")
     return None
 
 @router.get("/search", response_model=List[BookRead])

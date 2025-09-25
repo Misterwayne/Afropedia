@@ -2,15 +2,17 @@
 import { useState, useEffect } from 'react'; // Import useState
 import { useRouter } from 'next/router';
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
-import { Heading, Box, Text, Flex, Link as ChakraLink, Button, Grid, GridItem } from '@chakra-ui/react'; // Import Grid, GridItem
+import { Heading, Box, Text, Flex, Link as ChakraLink, Button, Grid, GridItem, HStack, useDisclosure, Container } from '@chakra-ui/react'; // Import Grid, GridItem
 import apiClient from '@/lib/api';
 import Spinner from '@/components/UI/Spinner';
 import ErrorMessage from '@/components/UI/ErrorMessage';
 import ArticleViewer, { ExtractedHeading } from '@/components/Article/ArticleViewer'; // Import ExtractedHeading type
 import TableOfContents from '@/components/Article/TableOfContent'; // Import ToC component
+import ContentFlagModal from '@/components/Moderation/ContentFlagModal';
+import ModerationStatusBadge from '@/components/Moderation/ModerationStatusBadge';
 import { Article } from '@/types';
 import Link from 'next/link';
-import { EditIcon, TimeIcon } from '@chakra-ui/icons';
+import { EditIcon, TimeIcon, WarningIcon } from '@chakra-ui/icons';
 
 // getServerSideProps remains the same as before...
 export const getServerSideProps: GetServerSideProps<{ article: Article | null; error?: string | null }> = async (context) => {
@@ -24,10 +26,6 @@ export const getServerSideProps: GetServerSideProps<{ article: Article | null; e
     try {
        const response = await apiClient.get<Article>(`/articles/${title}`);
        article = response.data;
-       if (!article?.currentRevision) {
-          console.warn(`Article found but currentRevision missing for title: ${title}`);
-          return { notFound: true };
-       }
     } catch (err: any) {
        console.error(`GSSP Error fetching article ${title}:`, err.response?.status, err.response?.data);
        if (err.response?.status === 404) {
@@ -42,6 +40,7 @@ export const getServerSideProps: GetServerSideProps<{ article: Article | null; e
 const WikiPage = ({ article, error }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
   const router = useRouter();
   const titleFromRouter = router.query.title as string | undefined;
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   // State to hold the headings extracted from ArticleViewer
   const [headings, setHeadings] = useState<ExtractedHeading[]>([]);
@@ -58,21 +57,25 @@ const WikiPage = ({ article, error }: InferGetServerSidePropsType<typeof getServ
   // --- Render Logic ---
   if (error) {
      return (
-         <Box>
+         <Container maxW="7xl" py={8}>
              <Heading as="h1" size="xl" mb={6}>{titleFromRouter?.replace(/_/g, ' ') ?? 'Error'}</Heading>
              <ErrorMessage title="Load Error" message={error} />
-         </Box>
+         </Container>
      );
   }
-  if (!article || !article.currentRevision) {
-     return <ErrorMessage title="Load Error" message={`Could not display article data for "${titleFromRouter}".`} />
+  if (!article) {
+     return (
+        <Container maxW="7xl" py={8}>
+          <ErrorMessage title="Load Error" message={`Could not display article data for "${titleFromRouter}".`} />
+        </Container>
+     );
   }
 
   const displayTitle = article.title.replace(/_/g, ' ');
   const hasHeadings = headings.length > 0; // Check if there are headings to display ToC
 
   return (
-    <Box>
+    <Container maxW="7xl" py={8}>
       {/* --- Top Meta Section (Title, Edit/History Buttons) --- */}
       <Flex justify="space-between" align="center" wrap="wrap" mb={4}>
           <Heading as="h1" size="2xl" mb={{ base: 2, md: 0 }}>
@@ -83,15 +86,30 @@ const WikiPage = ({ article, error }: InferGetServerSidePropsType<typeof getServ
                  <Button leftIcon={<EditIcon />} size="sm" variant="outline" colorScheme="teal" mr={2}>Edit</Button>
               </Link>
               <Link href={`/history/${article.title}`} passHref>
-                 <Button leftIcon={<TimeIcon />} size="sm" variant="outline" colorScheme="gray">History</Button>
+                 <Button leftIcon={<TimeIcon />} size="sm" variant="outline" colorScheme="gray" mr={2}>History</Button>
               </Link>
+              <Button 
+                leftIcon={<WarningIcon />} 
+                size="sm" 
+                variant="outline" 
+                colorScheme="red"
+                onClick={onOpen}
+              >
+                Flag
+              </Button>
           </Flex>
       </Flex>
-      <Text fontSize="sm" color="gray.500" mb={6}> {/* Increased bottom margin */}
-         Last updated on {new Date(article.currentRevision.timestamp).toLocaleString()}
-         {article.currentRevision.user && ` by ${article.currentRevision.user.username}`}
-         {article.currentRevision.comment && ` (${article.currentRevision.comment})`}
-      </Text>
+      <HStack justify="space-between" align="center" mb={6}>
+        <Text fontSize="sm" color="gray.500">
+           Last updated on {article.currentRevision ? new Date(article.currentRevision.timestamp).toLocaleString() : "Unknown"}
+           {article.currentRevision?.user && ` by ${article.currentRevision.user.username}`}
+           {article.currentRevision?.comments && ` (${article.currentRevision.comments})`}
+        </Text>
+        <ModerationStatusBadge 
+          status={article.status || 'draft'} 
+          showLabel={false}
+        />
+      </HStack>
 
       {/* --- Main Content Area (Article + Optional ToC) --- */}
       {/* Use Grid for layout: Main content area and optional sidebar for ToC */}
@@ -103,8 +121,9 @@ const WikiPage = ({ article, error }: InferGetServerSidePropsType<typeof getServ
          {/* Article Content */}
          <GridItem>
             <ArticleViewer
-              content={article.currentRevision.content}
+              content={article.currentRevision?.content || "No content available"}
               onHeadingsExtracted={handleHeadingsExtracted} // Pass the callback
+              articleTitle={article.title} // Pass article title for sources
             />
          </GridItem>
 
@@ -115,7 +134,18 @@ const WikiPage = ({ article, error }: InferGetServerSidePropsType<typeof getServ
              </GridItem>
          )}
       </Grid>
-    </Box>
+
+      {/* Content Flag Modal */}
+      <ContentFlagModal
+        isOpen={isOpen}
+        onClose={onClose}
+        contentType="article"
+        contentId={article.id}
+        onFlagSubmitted={() => {
+          console.log('Content flagged successfully');
+        }}
+      />
+    </Container>
   );
 };
 

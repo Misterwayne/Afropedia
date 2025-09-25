@@ -1,5 +1,6 @@
 # models.py
 from typing import List, Optional
+from pydantic import validator
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship, Column
 import uuid
@@ -19,16 +20,24 @@ class UserBase(SQLModel):
 class User(UserBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     hashed_password: str = Field() # Store hashed password
+    role: str = Field(default="user", index=True) # User role for moderation
+    is_active: bool = Field(default=True) # Account status
+    reputation_score: int = Field(default=0) # User reputation for moderation
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow}, nullable=False)
     revisions: List["Revision"] = Relationship(back_populates="user") # Relationship defined later
     comments: List["Comment"] = Relationship(back_populates="user")  # Add this line
+    sources: List["Source"] = Relationship(back_populates="creator")
+    references: List["Reference"] = Relationship(back_populates="creator")
 
 class UserCreate(UserBase):
     password: str # Plain password for registration
 
 class UserRead(UserBase):
     id: int
+    role: str = Field(default="user")
+    is_active: bool = Field(default=True)
+    reputation_score: int = Field(default=0)
     created_at: datetime
     updated_at: datetime
 
@@ -37,6 +46,9 @@ class ArticleBase(SQLModel):
 
 class Article(ArticleBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    status: str = Field(default="draft", index=True) # Content status for moderation
+    is_featured: bool = Field(default=False) # Featured content flag
+    view_count: int = Field(default=0) # View tracking
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow}, nullable=False)
     current_revision_id: Optional[int] = Field(
@@ -63,6 +75,14 @@ class Article(ArticleBase, table=True):
             "foreign_keys": "[Article.current_revision_id]", # Use the FK in THIS (Article) table
             "lazy": "selectin", # Optional: Load this eagerly
             "uselist": False # Important: Indicates this is one-to-one (or many-to-one)
+        }
+    )
+
+    # References relationship (one article has many references)
+    references: List["Reference"] = Relationship(
+        back_populates="article",
+        sa_relationship_kwargs={
+            "foreign_keys": "[Reference.article_id]"
         }
     )
 
@@ -101,6 +121,9 @@ class RevisionBase(SQLModel):
 
 class Revision(RevisionBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    status: str = Field(default="pending", index=True) # Moderation status
+    is_approved: bool = Field(default=False) # Approval status
+    needs_review: bool = Field(default=True) # Review requirement flag
     comments: List[Comment] = Relationship(back_populates="revision")
 
     article: "Article" = Relationship(
@@ -124,8 +147,26 @@ class Revision(RevisionBase, table=True):
 # --- Read/Create/Update Models (remain mostly the same) ---
 class RevisionRead(RevisionBase):
     id: int
+    status: str = "pending"  # Moderation status - default to pending
+    is_approved: bool = False  # Approval status - default to False
+    needs_review: bool = True  # Review requirement flag - default to True
     user: Optional[UserRead] = None
-    comments: List[CommentRead] = []
+    comments: List[CommentRead] = Field(default_factory=list)
+    
+    @validator('status', pre=True)
+    def validate_status(cls, v):
+        # Don't apply defaults - use actual database values
+        return v
+    
+    @validator('is_approved', pre=True)
+    def validate_is_approved(cls, v):
+        # Don't apply defaults - use actual database values  
+        return v
+    
+    @validator('needs_review', pre=True)  
+    def validate_needs_review(cls, v):
+        # Don't apply defaults - use actual database values
+        return v
 
 class RevisionReadWithUser(RevisionRead):
     user: Optional[UserRead] = None
@@ -339,3 +380,81 @@ class BookUpdate(SQLModel):
     genre: Optional[str] = None
     summary: Optional[str] = None
     cover_image: Optional[str] = None
+
+# --- Source and Reference Models ---
+class SourceBase(SQLModel):
+    title: str = Field(index=True)
+    url: Optional[str] = None
+    author: Optional[str] = None
+    publication: Optional[str] = None
+    publication_date: Optional[datetime] = None
+    access_date: Optional[datetime] = None
+    source_type: str = Field(default="web", index=True)  # web, book, journal, newspaper, etc.
+    isbn: Optional[str] = None
+    doi: Optional[str] = None
+    description: Optional[str] = None
+
+class Source(SourceBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: Optional[int] = Field(default=None, foreign_key="user.id")
+    
+    # Relationships
+    references: List["Reference"] = Relationship(back_populates="source")
+    creator: Optional["User"] = Relationship(back_populates="sources")
+
+class SourceRead(SourceBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: Optional[int] = None
+
+class SourceCreate(SourceBase):
+    pass
+
+class SourceUpdate(SQLModel):
+    title: Optional[str] = None
+    url: Optional[str] = None
+    author: Optional[str] = None
+    publication: Optional[str] = None
+    publication_date: Optional[datetime] = None
+    access_date: Optional[datetime] = None
+    source_type: Optional[str] = None
+    isbn: Optional[str] = None
+    doi: Optional[str] = None
+    description: Optional[str] = None
+
+class ReferenceBase(SQLModel):
+    article_id: int = Field(foreign_key="article.id")
+    source_id: int = Field(foreign_key="source.id")
+    reference_number: int = Field(index=True)  # The number that appears in the article text
+    context: Optional[str] = None  # The text around the reference
+    page_number: Optional[str] = None  # For book sources
+    section: Optional[str] = None  # For book/journal sources
+
+class Reference(ReferenceBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: Optional[int] = Field(default=None, foreign_key="user.id")
+    
+    # Relationships
+    article: "Article" = Relationship(back_populates="references")
+    source: "Source" = Relationship(back_populates="references")
+    creator: Optional["User"] = Relationship(back_populates="references")
+
+class ReferenceRead(ReferenceBase):
+    id: int
+    created_at: datetime
+    created_by: Optional[int] = None
+    source: SourceRead
+
+class ReferenceCreate(ReferenceBase):
+    pass
+
+class ReferenceUpdate(SQLModel):
+    source_id: Optional[int] = None
+    reference_number: Optional[int] = None
+    context: Optional[str] = None
+    page_number: Optional[str] = None
+    section: Optional[str] = None

@@ -1,7 +1,7 @@
 // pages/history/[title].tsx
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Heading, Box, Text, Flex } from '@chakra-ui/react';
+import { Heading, Box, Text, Flex, Container } from '@chakra-ui/react';
 import apiClient from '@/lib/api'; // Adjust path
 import Spinner from '@/components/UI/Spinner'; // Adjust path
 import ErrorMessage from '@/components/UI/ErrorMessage'; // Adjust path
@@ -45,15 +45,17 @@ const HistoryPage = () => {
   }
 
   return (
-    <Box>
-      <Heading as="h1" size="xl" mb={2}>
-        Revision History: {title ? (title as string).replace(/_/g, ' ') : 'Loading...'}
-      </Heading>
-       {error && <ErrorMessage title="Load Error" message={error} />}
-      {!error && title && typeof title === 'string' && (
-        <RevisionList revisions={revisions} setRevisions={setRevisions} articleTitle={title} />
-      )}
-    </Box>
+    <Container maxW="7xl" py={8}>
+      <Box>
+        <Heading as="h1" size="xl" mb={2}>
+          Revision History: {title ? (title as string).replace(/_/g, ' ') : 'Loading...'}
+        </Heading>
+         {error && <ErrorMessage title="Load Error" message={error} />}
+        {!error && title && typeof title === 'string' && (
+          <RevisionList revisions={revisions} setRevisions={setRevisions} articleTitle={title} />
+        )}
+      </Box>
+    </Container>
   );
 };
 
