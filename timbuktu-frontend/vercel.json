@@ -10,7 +10,6 @@
   "env": {
     "NEXT_PUBLIC_API_URL": "https://afropediabackend-production.up.railway.app"
   },
-  "regions": ["all"],
   "headers": [
     {
       "source": "/(.*)",
