@@ -1,5 +1,5 @@
 # routers/auth.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm # For standard login form
 from sqlmodel.ext.asyncio.session import AsyncSession # Use AsyncSession
 from datetime import timedelta
@@ -12,9 +12,14 @@ from database import get_session
 from auth import security
 from auth.dependencies import get_current_user # Import the dependency
 from auth_supabase import get_user_by_username_supabase, get_user_by_email_supabase, create_user_supabase
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 logger = logging.getLogger("afropedia.auth")
 router = APIRouter()
+
+# Rate limiter for auth endpoints
+limiter = Limiter(key_func=get_remote_address)
 
 @router.post("/register", response_model=UserRead)
 async def register_user(
@@ -32,8 +37,10 @@ async def register_user(
     return UserRead.model_validate(user)
 
 
-@router.post("/login") 
+@router.post("/login")
+@limiter.limit("5/minute")  # 5 login attempts per minute
 async def login_for_access_token(
+    request: Request,
     user_login_data: UserLogin
 ):
     """Logs in a user via JSON payload and returns an access token."""

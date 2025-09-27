@@ -3,6 +3,9 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
 import logging
 
@@ -31,6 +34,9 @@ setup_logging(
 
 logger = logging.getLogger("afropedia.main")
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title="Afropedia API",
     description="A comprehensive knowledge platform for African content",
@@ -55,19 +61,15 @@ import os
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 IS_PRODUCTION = ENVIRONMENT == "production"
 
-# Configure CORS based on environment
+# Configure CORS based on environment - SECURITY FIXED
 if IS_PRODUCTION:
-    # Production: Allow specific domains + localhost for testing
     allowed_origins = [
-        "https://yourdomain.com",
-        "https://www.yourdomain.com",
-        "https://afropedia.vercel.app",  # Add your Vercel domain
-        "https://afropedia-frontend.vercel.app",  # Add your actual Vercel domain
-        "http://localhost:3000",  # Allow localhost for testing
-        "http://localhost:3001"
+        "https://afropedia-one.vercel.app",  # Your actual Vercel domain
+        "https://afropedia.vercel.app",     # Alternative domain
+        "http://localhost:3000",            # Local development
+        "http://localhost:3001"             # Alternative local port
     ]
 else:
-    # Development: Allow localhost
     allowed_origins = [
         "http://localhost:3000",
         "http://localhost:3001",
@@ -82,6 +84,10 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Range", "X-Request-ID"]
 )
+
+# Add rate limiter to app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Add exception handlers
 app.add_exception_handler(AfropediaException, afropedia_exception_handler)

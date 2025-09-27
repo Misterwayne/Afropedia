@@ -49,6 +49,7 @@ import {
 } from 'react-icons/fi';
 import Link from 'next/link';
 import apiClient from '@/lib/api';
+import { sanitizeHtml, createHighlightedText } from '../utils/sanitizeHtml';
 import { ArticleSummary } from '@/types';
 import { Book } from '@/types/book';
 import EnhancedSearchInput from '@/components/Search/EnhancedSearchInput';
@@ -305,7 +306,7 @@ const SearchPage = () => {
 
                                     <Heading size="md" color="african.800" noOfLines={2}>
                                       {(article as any).highlightedTitle ? (
-                                        <span dangerouslySetInnerHTML={{ __html: (article as any).highlightedTitle.replace(/_/g, ' ') }} />
+                                        <span dangerouslySetInnerHTML={{ __html: sanitizeHtml((article as any).highlightedTitle?.replace(/_/g, ' ') || '') }} />
                                       ) : (
                                         article.title.replace(/_/g, ' ')
                                       )}
@@ -313,7 +314,7 @@ const SearchPage = () => {
 
                                     <Text color="gray.600" fontSize="sm" noOfLines={3}>
                                       {(article as any).highlightedSummary ? (
-                                        <span dangerouslySetInnerHTML={{ __html: (article as any).highlightedSummary }} />
+                                        <span dangerouslySetInnerHTML={{ __html: sanitizeHtml((article as any).highlightedSummary || '') }} />
                                       ) : (
                                         (article as any).summary || 'Peer-reviewed content exploring African knowledge and heritage.'
                                       )}
@@ -378,7 +379,7 @@ const SearchPage = () => {
 
                                     <Heading size="md" color="african.800" noOfLines={2}>
                                       {(book as any).highlightedTitle ? (
-                                        <span dangerouslySetInnerHTML={{ __html: (book as any).highlightedTitle }} />
+                                        <span dangerouslySetInnerHTML={{ __html: sanitizeHtml((book as any).highlightedTitle || '') }} />
                                       ) : (
                                         book.title
                                       )}
@@ -390,7 +391,7 @@ const SearchPage = () => {
 
                                     <Text color="gray.600" fontSize="sm" noOfLines={3}>
                                       {(book as any).highlightedDescription ? (
-                                        <span dangerouslySetInnerHTML={{ __html: (book as any).highlightedDescription }} />
+                                        <span dangerouslySetInnerHTML={{ __html: sanitizeHtml((book as any).highlightedDescription || '') }} />
                                       ) : (
                                         book.description || 'A valuable addition to the Afropedia library.'
                                       )}
