@@ -8,14 +8,9 @@
     }
   ],
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://afropedia-backend.railway.app"
+    "NEXT_PUBLIC_API_URL": "https://afropediabackend-production.up.railway.app"
   },
   "regions": ["all"],
-  "functions": {
-    "pages/api/**/*.js": {
-      "maxDuration": 30
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
