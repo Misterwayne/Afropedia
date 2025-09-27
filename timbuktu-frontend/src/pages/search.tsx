@@ -96,15 +96,15 @@ const SearchPage = () => {
       console.log('Advanced search results:', results);
       setSearchResults(results);
       
-      // Extract articles and books from advanced search results
+      // Extract articles and books from MeiliSearch results
       const advancedArticles = (results.articles?.hits || []).map((article: any) => ({
         id: article.id,
         title: article.title.replace(/ /g, '_'), // Convert back to underscore format for URLs
         updatedAt: article.updated_at,
         createdAt: article.created_at,
-        summary: article.summary,
-        author: article.author,
-        tags: article.tags,
+        summary: article.summary || 'Peer-reviewed content exploring African knowledge and heritage.',
+        author: article.author || 'Unknown',
+        tags: article.tags || [],
         // Add highlighted content if available
         highlightedTitle: article._formatted?.title || article.title,
         highlightedSummary: article._formatted?.summary || article.summary
@@ -304,18 +304,18 @@ const SearchPage = () => {
                                     </HStack>
 
                                     <Heading size="md" color="african.800" noOfLines={2}>
-                                      {article.highlightedTitle ? (
-                                        <span dangerouslySetInnerHTML={{ __html: article.highlightedTitle.replace(/_/g, ' ') }} />
+                                      {(article as any).highlightedTitle ? (
+                                        <span dangerouslySetInnerHTML={{ __html: (article as any).highlightedTitle.replace(/_/g, ' ') }} />
                                       ) : (
                                         article.title.replace(/_/g, ' ')
                                       )}
                                     </Heading>
 
                                     <Text color="gray.600" fontSize="sm" noOfLines={3}>
-                                      {article.highlightedSummary ? (
-                                        <span dangerouslySetInnerHTML={{ __html: article.highlightedSummary }} />
+                                      {(article as any).highlightedSummary ? (
+                                        <span dangerouslySetInnerHTML={{ __html: (article as any).highlightedSummary }} />
                                       ) : (
-                                        article.summary || 'Peer-reviewed content exploring African knowledge and heritage.'
+                                        (article as any).summary || 'Peer-reviewed content exploring African knowledge and heritage.'
                                       )}
                                     </Text>
                                   </VStack>
@@ -377,8 +377,8 @@ const SearchPage = () => {
                                     </HStack>
 
                                     <Heading size="md" color="african.800" noOfLines={2}>
-                                      {book.highlightedTitle ? (
-                                        <span dangerouslySetInnerHTML={{ __html: book.highlightedTitle }} />
+                                      {(book as any).highlightedTitle ? (
+                                        <span dangerouslySetInnerHTML={{ __html: (book as any).highlightedTitle }} />
                                       ) : (
                                         book.title
                                       )}
@@ -389,8 +389,8 @@ const SearchPage = () => {
                                     </Text>
 
                                     <Text color="gray.600" fontSize="sm" noOfLines={3}>
-                                      {book.highlightedDescription ? (
-                                        <span dangerouslySetInnerHTML={{ __html: book.highlightedDescription }} />
+                                      {(book as any).highlightedDescription ? (
+                                        <span dangerouslySetInnerHTML={{ __html: (book as any).highlightedDescription }} />
                                       ) : (
                                         book.description || 'A valuable addition to the Afropedia library.'
                                       )}

@@ -57,11 +57,14 @@ IS_PRODUCTION = ENVIRONMENT == "production"
 
 # Configure CORS based on environment
 if IS_PRODUCTION:
-    # Production: Restrict to specific domains
+    # Production: Allow specific domains + localhost for testing
     allowed_origins = [
         "https://yourdomain.com",
         "https://www.yourdomain.com",
-        "https://afropedia.vercel.app"  # Add your Vercel domain
+        "https://afropedia.vercel.app",  # Add your Vercel domain
+        "https://afropedia-frontend.vercel.app",  # Add your actual Vercel domain
+        "http://localhost:3000",  # Allow localhost for testing
+        "http://localhost:3001"
     ]
 else:
     # Development: Allow localhost

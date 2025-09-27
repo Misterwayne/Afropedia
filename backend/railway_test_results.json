@@ -1,0 +1,56 @@
+{
+  "total": 8,
+  "passed": 7,
+  "failed": 1,
+  "success_rate": 0.875,
+  "results": [
+    {
+      "test": "Health Check",
+      "success": true,
+      "message": "Status: healthy",
+      "response": null
+    },
+    {
+      "test": "API Documentation",
+      "success": true,
+      "message": "Swagger UI accessible",
+      "response": null
+    },
+    {
+      "test": "Articles Endpoint",
+      "success": true,
+      "message": "Found 15 articles",
+      "response": null
+    },
+    {
+      "test": "Books Endpoint",
+      "success": true,
+      "message": "Found 0 books",
+      "response": null
+    },
+    {
+      "test": "Search Endpoint",
+      "success": true,
+      "message": "Search completed",
+      "response": null
+    },
+    {
+      "test": "Monitoring Health",
+      "success": true,
+      "message": "Status: healthy",
+      "response": null
+    },
+    {
+      "test": "Metrics Endpoint",
+      "success": true,
+      "message": "Metrics accessible",
+      "response": null
+    },
+    {
+      "test": "CORS Headers",
+      "success": false,
+      "message": "No CORS headers found",
+      "response": null
+    }
+  ]
+}

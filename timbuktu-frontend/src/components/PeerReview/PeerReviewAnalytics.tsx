@@ -636,7 +636,7 @@ const PeerReviewAnalytics: React.FC = () => {
                         <Icon as={FiThumbsUp} boxSize={8} color="green.500" />
                         <Text fontWeight="medium">High Quality</Text>
                         <Text fontSize="2xl" color="green.500">
-                          {analytics?.total_reviews > 0 ? 'N/A' : '0%'}
+                          {analytics?.total_reviews && analytics.total_reviews > 0 ? 'N/A' : '0%'}
                         </Text>
                         <Text fontSize="sm" color="gray.600">
                           Reviews scoring 4+ stars

@@ -207,9 +207,9 @@ const RevisionDetailPage = () => {
             ...prev,
             revision: {
               ...prev.revision,
-              comments: prev.revision.comments ? [...prev.revision.comments, newCommentObj] : [newCommentObj]
+              comments: [...(prev.revision.comments || []), newCommentObj as any]
             }
-          };
+          } as RevisionDetails;
         });
       }
 
@@ -385,10 +385,10 @@ const RevisionDetailPage = () => {
                 </HStack>
               </HStack>
               
-              {revision.comment && (
+              {revision.comments && revision.comments.length > 0 && (
                 <Box p={3} bg="gray.50" borderRadius="md">
                   <Text fontSize="sm" fontWeight="medium" mb={1}>Revision Comment:</Text>
-                  <Text fontSize="sm">{revision.comment}</Text>
+                  <Text fontSize="sm">{revision.comments[0]?.content}</Text>
                 </Box>
               )}
             </VStack>

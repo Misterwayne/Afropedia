@@ -298,13 +298,13 @@ const NotificationsPage: React.FC = () => {
                           transition="all 0.2s"
                         >
                           <CardBody>
-                            <Flex align="start" spacing={3}>
+                            <HStack align="start" spacing={3}>
                               <Avatar
                                 size="sm"
                                 bg={`${getNotificationColor(notification.type)}.500`}
                                 icon={<IconComponent color="white" />}
                               />
-                              <VStack align="start" spacing={1} flex={1} ml={3}>
+                              <VStack align="start" spacing={1} flex={1}>
                                 <HStack spacing={2} w="full">
                                   <Text fontWeight="semibold" color="african.800" flex={1}>
                                     {notification.title}
@@ -354,7 +354,7 @@ const NotificationsPage: React.FC = () => {
                                   </MenuItem>
                                 </MenuList>
                               </Menu>
-                            </Flex>
+                            </HStack>
                           </CardBody>
                         </Card>
                       );

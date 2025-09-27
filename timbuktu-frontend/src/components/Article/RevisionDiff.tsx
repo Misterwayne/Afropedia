@@ -18,6 +18,7 @@ import {
   Heading,
   Alert,
   AlertIcon,
+  Code,
   AlertTitle,
   AlertDescription,
   Spinner,

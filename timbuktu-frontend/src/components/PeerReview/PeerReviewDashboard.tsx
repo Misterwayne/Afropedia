@@ -495,8 +495,8 @@ const PeerReviewDashboard: React.FC = () => {
                                 <Badge colorScheme={getStatusColor(review.status)}>
                                   {review.status}
                                 </Badge>
-                                <Badge colorScheme={getPriorityColor(review.priority)}>
-                                  {review.priority}
+                                <Badge colorScheme={getPriorityColor(review.priority || 'medium')}>
+                                  {review.priority || 'medium'}
                                 </Badge>
                               </HStack>
                               <Text fontWeight="medium">
@@ -505,7 +505,7 @@ const PeerReviewDashboard: React.FC = () => {
                               <Text fontSize="sm" color="gray.600">
                                 Started: {new Date(review.created_at).toLocaleDateString()}
                               </Text>
-                              {review.time_spent_minutes > 0 && (
+                              {review.time_spent_minutes && review.time_spent_minutes > 0 && (
                                 <Text fontSize="xs" color="gray.500">
                                   Time spent: {review.time_spent_minutes} minutes
                                 </Text>
@@ -574,7 +574,7 @@ const PeerReviewDashboard: React.FC = () => {
                                 Review #{review.id} - Revision #{review.revision_id}
                               </Text>
                               <Text fontSize="sm" color="gray.600">
-                                Completed: {new Date(review.completed_at).toLocaleDateString()}
+                                Completed: {review.completed_at ? new Date(review.completed_at).toLocaleDateString() : 'Not completed'}
                               </Text>
                               {review.summary && (
                                 <Text fontSize="sm" color="gray.700" noOfLines={2}>

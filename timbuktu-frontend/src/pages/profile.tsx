@@ -56,7 +56,7 @@ const ProfilePage: React.FC = () => {
       setProfileData({
         username: user.username || '',
         email: user.email || '',
-        bio: user.bio || '',
+        bio: (user as any).bio || '',
       });
       fetchUserStats();
     }
@@ -118,7 +118,7 @@ const ProfilePage: React.FC = () => {
       setProfileData({
         username: user.username || '',
         email: user.email || '',
-        bio: user.bio || '',
+        bio: (user as any).bio || '',
       });
     }
     setIsEditing(false);
@@ -321,7 +321,7 @@ const ProfilePage: React.FC = () => {
                   <HStack justify="space-between">
                     <Text>Member Since</Text>
                     <Text fontSize="sm" color="gray.600">
-                      {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                      {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                     </Text>
                   </HStack>
                 </VStack>
